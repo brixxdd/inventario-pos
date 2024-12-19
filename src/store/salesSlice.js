@@ -9,10 +9,13 @@ const salesSlice = createSlice({
   },
   reducers: {
     addSale: (state, action) => {
-      state.sales.push(action.payload);
+      if (Array.isArray(action.payload)) {
+        state.sales = action.payload;
+      } else {
+        state.sales.push(action.payload);
+      }
     },
     updateStock: (state, action) => {
-      // Lógica para actualizar el stock
       const { productId, quantity } = action.payload;
       // Implementa la lógica necesaria
     }

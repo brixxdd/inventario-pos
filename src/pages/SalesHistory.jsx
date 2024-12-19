@@ -2,6 +2,8 @@ import { useState, useEffect } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
+import { useDatabase } from '../hooks/useDatabase';
+import { addSale } from '../store/salesSlice';
 import { 
   MagnifyingGlassIcon, 
   CalendarIcon,
@@ -15,20 +17,21 @@ export default function SalesHistory() {
   const [dateFilter, setDateFilter] = useState('all');
   const sales = useSelector(state => state.sales.sales);
   const dispatch = useDispatch();
-  console.log('Ventas:', sales);
+  const { getSales } = useDatabase();
 
   useEffect(() => {
     const loadSales = async () => {
       try {
-        const salesData = await getSales(); // Asegúrate de que esta función esté definida
-        dispatch(addSale(salesData)); // Asegúrate de que el dispatch esté configurado
+        const salesData = await getSales();
+        console.log('Datos de ventas detallados:', JSON.stringify(salesData, null, 2));
+        dispatch(addSale(salesData));
       } catch (error) {
         console.error('Error al cargar ventas:', error);
       }
     };
 
     loadSales();
-  }, [dispatch]);
+  }, [dispatch, getSales]);
 
   // Función para formatear el método de pago
   const getPaymentMethodBadge = (method) => {
@@ -95,61 +98,50 @@ export default function SalesHistory() {
 
       {/* Lista de ventas */}
       <div className="bg-white shadow overflow-hidden sm:rounded-md">
-        <ul className="divide-y divide-gray-200">
-          {sales.map((sale) => (
-            <li key={sale.id}>
-              <div className="px-4 py-4 sm:px-6 hover:bg-gray-50">
-                <div className="flex items-center justify-between">
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center">
-                      <p className="text-sm font-medium text-indigo-600 truncate">
-                        Venta #{sale.id}
-                      </p>
-                      {getPaymentMethodBadge(sale.payment_method)}
+        {sales && sales.length > 0 ? (
+          <ul className="divide-y divide-gray-200">
+            {sales.map((sale) => sale && (
+              <li key={sale.id || Math.random()}>
+                <div className="px-4 py-4 sm:px-6 hover:bg-gray-50">
+                  <div className="flex items-center justify-between">
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center">
+                        <p className="text-sm font-medium text-indigo-600 truncate">
+                          Venta #{sale.id || 'Sin ID'}
+                        </p>
+                        {sale.payment_method && getPaymentMethodBadge(sale.payment_method)}
+                      </div>
+                      <div className="mt-2 flex">
+                        <div className="flex items-center text-sm text-gray-500">
+                          <CalendarIcon className="flex-shrink-0 mr-1.5 h-5 w-5 text-gray-400" />
+                          {sale.date ? format(new Date(sale.date), "PPpp", { locale: es }) : 'Fecha no válida'}
+                        </div>
+                      </div>
                     </div>
-                    <div className="mt-2 flex">
-                      <div className="flex items-center text-sm text-gray-500">
-                        <CalendarIcon className="flex-shrink-0 mr-1.5 h-5 w-5 text-gray-400" />
-                        {format(new Date(sale.date), "PPpp", { locale: es })}
+                    <div className="flex flex-col items-end">
+                      <p className="text-2xl font-semibold text-gray-900">
+                        ${(sale.total || 0).toFixed(2)}
+                      </p>
+                      <div className="mt-2 flex items-center text-sm text-gray-500">
+                        <ShoppingCartIcon className="flex-shrink-0 mr-1.5 h-5 w-5 text-gray-400" />
+                        {sale.items?.length || 0} productos
                       </div>
                     </div>
                   </div>
-                  <div className="flex flex-col items-end">
-                    <p className="text-2xl font-semibold text-gray-900">
-                      ${sale.total.toFixed(2)}
-                    </p>
-                    <div className="mt-2 flex items-center text-sm text-gray-500">
-                      <ShoppingCartIcon className="flex-shrink-0 mr-1.5 h-5 w-5 text-gray-400" />
-                      {sale.items?.length || 0} productos
-                    </div>
-                  </div>
                 </div>
-                
-                {/* Botón de detalles */}
-                <div className="mt-4">
-                  <button
-                    className="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm leading-4 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
-                    onClick={() => {/* Implementar vista detallada */}}
-                  >
-                    Ver detalles
-                  </button>
-                </div>
-              </div>
-            </li>
-          ))}
-        </ul>
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <div className="text-center py-12">
+            <ShoppingCartIcon className="mx-auto h-12 w-12 text-gray-400" />
+            <h3 className="mt-2 text-sm font-medium text-gray-900">No hay ventas</h3>
+            <p className="mt-1 text-sm text-gray-500">
+              No se han registrado ventas aún.
+            </p>
+          </div>
+        )}
       </div>
-
-      {/* Mensaje cuando no hay ventas */}
-      {sales.length === 0 && (
-        <div className="text-center py-12">
-          <ShoppingCartIcon className="mx-auto h-12 w-12 text-gray-400" />
-          <h3 className="mt-2 text-sm font-medium text-gray-900">No hay ventas</h3>
-          <p className="mt-1 text-sm text-gray-500">
-            No se han registrado ventas aún.
-          </p>
-        </div>
-      )}
     </div>
   );
 } 
